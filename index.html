@@ -1,0 +1,1973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C&Co 3128 Printer</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0a;
+    color: #e8e8e8;
+    font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace;
+    min-height: 100vh;
+  }
+
+  header {
+    border-bottom: 1px solid #222;
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo {
+    width: 32px; height: 32px;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
+
+  .title { 
+    font-size: 15px; 
+    font-weight: 700; 
+    letter-spacing: -0.02em;
+    outline: none;
+    padding: 2px 6px;
+    margin: -2px -6px;
+    border-radius: 4px;
+    transition: background 0.15s;
+    cursor: text;
+  }
+  .title:hover { background: #1a1a1a; }
+  .title:focus { background: #1a1a1a; box-shadow: 0 0 0 1px #444; }
+  .subtitle { font-size: 11px; color: #888; }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  #battery {
+    font-size: 11px;
+    color: #4a9;
+    padding: 4px 10px;
+    background: #111;
+    border-radius: 4px;
+    border: 1px solid #222;
+    display: none;
+  }
+
+  .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #555;
+    transition: background 0.3s;
+  }
+
+  .dot.connected { background: #4a9; }
+  .dot.connecting { background: #ea3; }
+
+  .btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    border: none;
+    transition: all 0.2s;
+  }
+
+  .btn-primary { background: #e8e8e8; color: #0a0a0a; }
+  .btn-secondary { background: transparent; color: #888; border: 1px solid #333; }
+  .btn-primary:hover { background: #fff; }
+  .btn-secondary:hover { border-color: #555; color: #aaa; }
+  .btn-icon {
+    padding: 6px 10px;
+    background: #1a1a1a;
+    color: #888;
+    border: 1px solid #222;
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .btn-icon:hover:not(:disabled) { color: #e8e8e8; border-color: #333; }
+  .btn-icon:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  .main {
+    display: flex;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 24px;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .controls { flex: 1 1 320px; min-width: 280px; }
+  .preview-col { flex: 1 1 300px; min-width: 260px; }
+
+  .toolbar {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 16px;
+    background: #111;
+    border-radius: 8px;
+    padding: 3px;
+  }
+
+  .tab {
+    flex: 1;
+    padding: 8px 12px;
+    background: transparent;
+    color: #888;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: all 0.2s;
+  }
+
+  .tab.active { background: #222; color: #e8e8e8; }
+
+  .drop-zone {
+    width: 100%;
+    padding: 32px 16px;
+    background: #111;
+    border: 2px dashed #333;
+    border-radius: 8px;
+    color: #aaa;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    margin-bottom: 16px;
+    text-align: center;
+    transition: border-color 0.2s;
+  }
+
+  .drop-zone:hover, .drop-zone.dragover { border-color: #666; }
+
+  textarea, input[type=text], input[type=number] {
+    width: 100%;
+    background: #111;
+    border: 1px solid #222;
+    border-radius: 8px;
+    color: #e8e8e8;
+    padding: 12px;
+    font-size: 14px;
+    font-family: inherit;
+    resize: vertical;
+    outline: none;
+  }
+
+  textarea:focus, input:focus { border-color: #444; }
+
+  .settings-box {
+    background: #111;
+    border-radius: 8px;
+    border: 1px solid #1a1a1a;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  .settings-title {
+    font-size: 11px;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 12px;
+  }
+
+  .setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .setting-row:last-child { margin-bottom: 0; }
+
+  .setting-label { font-size: 12px; color: #b8b8b8; }
+  .setting-hint { font-size: 10px; color: #888; }
+
+  .density-btn {
+    width: 32px; height: 28px;
+    background: transparent;
+    color: #555;
+    border: 1px solid #222;
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  .density-btn.active { background: #333; color: #e8e8e8; border-color: #444; }
+
+  .toggle {
+    width: 40px; height: 22px;
+    border-radius: 11px;
+    border: none;
+    background: #222;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.2s;
+  }
+
+  .toggle.on { background: #4a9; }
+
+  .toggle-knob {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: #e8e8e8;
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    transition: left 0.2s;
+  }
+
+  .toggle.on .toggle-knob { left: 21px; }
+
+  .print-btn {
+    width: 100%;
+    padding: 14px;
+    background: #222;
+    color: #444;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: not-allowed;
+    font-family: inherit;
+    letter-spacing: 0.02em;
+    transition: all 0.2s;
+  }
+
+  .print-btn.ready { background: #e8e8e8; color: #0a0a0a; cursor: pointer; }
+  .print-btn.ready:hover { background: #fff; }
+
+  .preview-label {
+    font-size: 11px;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+  }
+
+  .preview-box {
+    background: #fff;
+    border-radius: 8px;
+    padding: 8px;
+    margin-bottom: 16px;
+    height: 250px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+  }
+
+  .preview-frame {
+    background: #fff;
+    border: 1px solid #ddd;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    position: relative;
+  }
+
+  /* Printable area guide for labels wider than printhead (e.g. 56mm receipt) */
+  .preview-frame.has-margin::before,
+  .preview-frame.has-margin::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: var(--margin-pct, 0%);
+    background: repeating-linear-gradient(45deg, rgba(0,0,0,0.04) 0 4px, transparent 4px 8px);
+    pointer-events: none;
+  }
+  .preview-frame.has-margin::before { left: 0; }
+  .preview-frame.has-margin::after  { right: 0; }
+
+  .preview-size-label {
+    position: absolute;
+    bottom: 4px;
+    right: 8px;
+    font-size: 10px;
+    color: #888;
+    background: rgba(255,255,255,0.85);
+    padding: 1px 6px;
+    border-radius: 3px;
+  }
+
+  #previewCanvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
+  }
+
+  .preview-frame.has-margin #previewCanvas {
+    width: var(--print-pct, 100%);
+    height: 100%;
+    margin: 0 auto;
+  }
+
+  #previewCanvas.text-mode {
+    cursor: grab;
+  }
+  #previewCanvas.text-dragging {
+    cursor: grabbing;
+  }
+
+  .log-box {
+    background: #111;
+    border: 1px solid #1a1a1a;
+    border-radius: 8px;
+    padding: 12px;
+    max-height: 200px;
+    overflow-y: auto;
+    font-size: 10px;
+    line-height: 1.7;
+  }
+
+  .log-entry { color: #aaa; }
+  .log-entry.send { color: #6a8; }
+  .log-entry.error { color: #c66; }
+
+  .footer-note {
+    margin-top: 16px;
+    font-size: 10px;
+    color: #777;
+    line-height: 1.6;
+  }
+
+  .no-bluetooth {
+    margin-top: 12px;
+    padding: 12px;
+    background: #1a1010;
+    border: 1px solid #331a1a;
+    border-radius: 8px;
+    font-size: 11px;
+    color: #c66;
+    line-height: 1.5;
+  }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .slider-row label { font-size: 11px; color: #666; }
+  .slider-row input[type=range] { flex: 1; }
+  .slider-row span { font-size: 11px; color: #888; min-width: 36px; text-align: right; }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    height: 4px;
+    background: #333;
+    border-radius: 2px;
+    outline: none;
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: #e8e8e8;
+    cursor: pointer;
+  }
+
+  /* Label size presets */
+  .preset-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+
+  .preset-btn {
+    padding: 10px 4px;
+    background: #1a1a1a;
+    border: 1px solid #222;
+    border-radius: 6px;
+    color: #b8b8b8;
+    font-size: 10px;
+    font-family: inherit;
+    cursor: pointer;
+    text-align: center;
+    line-height: 1.4;
+    transition: all 0.2s;
+  }
+
+  .preset-btn:hover { border-color: #444; color: #e8e8e8; }
+  .preset-btn.active { background: #2a2a2a; border-color: #4a9; color: #e8e8e8; }
+  .preset-btn .preset-mm { font-weight: 700; font-size: 11px; }
+  .preset-btn .preset-px { color: #888; font-size: 9px; }
+
+  .custom-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .custom-row input[type=number] {
+    padding: 8px 10px;
+    font-size: 12px;
+    width: 70px;
+  }
+  .custom-row .custom-x { color: #555; font-size: 11px; }
+
+  /* Modal */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 20px;
+  }
+  .modal-backdrop.open { display: flex; }
+
+  .modal {
+    background: #111;
+    border: 1px solid #222;
+    border-radius: 12px;
+    padding: 20px;
+    width: 100%;
+    max-width: 460px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .modal-title { font-size: 14px; font-weight: 700; }
+  .modal-close {
+    background: transparent;
+    border: none;
+    color: #666;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0 4px;
+  }
+  .modal-close:hover { color: #fff; }
+
+  .modal-preview {
+    background: #fff;
+    border-radius: 8px;
+    padding: 8px;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+  .modal-preview canvas {
+    max-width: 100%;
+    height: auto;
+    image-rendering: pixelated;
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 16px;
+  }
+
+  /* Templates list */
+  .template-list {
+    max-height: 240px;
+    overflow-y: auto;
+    margin-bottom: 12px;
+  }
+
+  .template-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    border-radius: 6px;
+    background: #1a1a1a;
+    margin-bottom: 4px;
+  }
+
+  .template-thumb {
+    width: 48px; height: 36px;
+    background: #fff;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+  .template-thumb canvas { max-width: 100%; max-height: 100%; image-rendering: pixelated; }
+
+  .template-info { flex: 1; min-width: 0; }
+  .template-name { font-size: 12px; color: #e8e8e8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .template-meta { font-size: 10px; color: #555; margin-top: 2px; }
+  .template-default-badge {
+    display: inline-block;
+    background: #2a4;
+    color: #0a0a0a;
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    margin-left: 6px;
+    font-weight: 700;
+  }
+
+  .template-actions {
+    display: flex;
+    gap: 4px;
+  }
+
+  .template-empty {
+    text-align: center;
+    color: #444;
+    font-size: 12px;
+    padding: 20px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="logo">🖨</div>
+    <div>
+      <div class="title" id="printerName" contenteditable="true" spellcheck="false">C&Co 3128</div>
+      <div class="subtitle">BLE thermal printer</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div id="battery"></div>
+    <div class="dot" id="statusDot"></div>
+    <button class="btn btn-primary" id="connectBtn" onclick="toggleConnect()">Connect</button>
+  </div>
+</header>
+
+<div class="main">
+  <div class="controls">
+    <!-- Toolbar: undo/redo/templates -->
+    <div class="toolbar">
+      <button class="btn-icon" id="undoBtn" onclick="undo()" disabled title="Undo (Ctrl+Z)">↶ Undo</button>
+      <button class="btn-icon" id="redoBtn" onclick="redo()" disabled title="Redo (Ctrl+Shift+Z)">↷ Redo</button>
+      <button class="btn-icon" onclick="openTemplatesModal()" title="Templates" style="margin-left:auto">💾 Templates</button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" data-tab="image" onclick="switchTab('image')">Image</button>
+      <button class="tab" data-tab="text" onclick="switchTab('text')">Text</button>
+      <button class="tab" data-tab="test" onclick="switchTab('test')">Test</button>
+    </div>
+
+    <!-- Image tab -->
+    <div class="tab-content active" id="tab-image">
+      <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleFile(this.files[0])">
+      <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+        Drop image here or click to browse
+      </div>
+    </div>
+
+    <!-- Text tab -->
+    <div class="tab-content" id="tab-text">
+      <textarea id="textInput" rows="3" placeholder="Type something..." oninput="renderText()">Hello World</textarea>
+      <div class="slider-row">
+        <label>Size</label>
+        <input type="range" id="fontSizeSlider" min="16" max="96" value="48" oninput="renderText()">
+        <span id="fontSizeLabel">48px</span>
+      </div>
+      <div style="display:flex; gap:8px; margin-top:10px; align-items:center;">
+        <button class="btn-icon" onclick="centerText()" title="Center text on label">⊕ Center</button>
+        <span class="setting-hint" style="flex:1; text-align:right;">Drag text on preview · Arrow keys to nudge</span>
+      </div>
+    </div>
+
+    <!-- Test tab -->
+    <div class="tab-content" id="tab-test">
+      <div style="padding: 16px 0; color: #666; font-size: 12px;">
+        Prints a test pattern with alignment marks and a gradient bar.
+      </div>
+    </div>
+
+    <!-- Label size -->
+    <div class="settings-box">
+      <div class="settings-title">Label size</div>
+      <div class="preset-grid" id="presetGrid"></div>
+      <div class="setting-row" style="margin-bottom: 0">
+        <div class="setting-label">Custom</div>
+        <div class="custom-row">
+          <input type="number" id="customW" min="10" max="80" value="50" oninput="setCustomSize()">
+          <span class="custom-x">×</span>
+          <input type="number" id="customH" min="0" max="200" value="30" oninput="setCustomSize()">
+          <span class="custom-x">mm</span>
+        </div>
+      </div>
+      <div class="setting-hint" id="sizeHint" style="margin-top: 8px">384 × 240 px @ 203 DPI</div>
+    </div>
+
+    <!-- Settings -->
+    <div class="settings-box">
+      <div class="settings-title">Print settings</div>
+
+      <div class="setting-row">
+        <div class="setting-label">Density</div>
+        <div style="display:flex;gap:4px">
+          <button class="density-btn" data-density="0" onclick="setDensity(0)">☀</button>
+          <button class="density-btn active" data-density="1" onclick="setDensity(1)">◐</button>
+          <button class="density-btn" data-density="2" onclick="setDensity(2)">●</button>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <div><div class="setting-label">Dither</div><div class="setting-hint">Better for photos & gradients</div></div>
+        <button class="toggle" id="toggleDither" onclick="toggleOption('dither')"><div class="toggle-knob"></div></button>
+      </div>
+
+      <div class="setting-row">
+        <div><div class="setting-label">Invert</div><div class="setting-hint">Swap black and white</div></div>
+        <button class="toggle" id="toggleInvert" onclick="toggleOption('invert')"><div class="toggle-knob"></div></button>
+      </div>
+
+      <div class="setting-row">
+        <div><div class="setting-label">Label mode</div><div class="setting-hint">For pre-cut labels with gaps. Off = continuous paper</div></div>
+        <button class="toggle" id="toggleLabel" onclick="toggleOption('label')"><div class="toggle-knob"></div></button>
+      </div>
+    </div>
+
+    <button class="print-btn" id="printBtn" onclick="openPreviewModal()">Connect printer first</button>
+
+    <div id="noBluetooth" class="no-bluetooth" style="display:none">
+      Web Bluetooth is not supported in this browser. Use Chrome, Edge, or Opera on desktop.
+      Firefox and Safari do not support Web Bluetooth.
+    </div>
+  </div>
+
+  <div class="preview-col">
+    <div class="preview-label">Preview <span id="previewHint" class="setting-hint" style="text-transform:none; letter-spacing:0; margin-left:8px; display:none">· drag text to reposition · arrows to nudge</span></div>
+    <div class="preview-box">
+      <div class="preview-frame" id="previewFrame">
+        <canvas id="previewCanvas" width="384" height="100"></canvas>
+      </div>
+      <div class="preview-size-label" id="previewSizeLabel">50×30mm</div>
+    </div>
+
+    <div class="preview-label">Log</div>
+    <div class="log-box" id="logBox">
+      <div class="log-entry">Waiting for connection...</div>
+    </div>
+
+    <div class="footer-note">
+      Requires Chrome, Edge, or Opera with Web Bluetooth.<br>
+      Based on reverse-engineered LuckPrinter SDK protocol.
+    </div>
+  </div>
+</div>
+
+<!-- Print preview modal -->
+<div class="modal-backdrop" id="previewModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Print preview</div>
+      <button class="modal-close" onclick="closePreviewModal()">×</button>
+    </div>
+
+    <div class="modal-preview">
+      <canvas id="modalPreviewCanvas"></canvas>
+    </div>
+
+    <div class="settings-box" style="margin-bottom: 0">
+      <div class="setting-row">
+        <div class="setting-label">Threshold</div>
+        <div class="custom-row" style="flex: 1; max-width: 240px">
+          <input type="range" id="thresholdSlider" min="0" max="255" value="128" oninput="updateThreshold()" style="flex:1">
+          <span id="thresholdLabel" style="font-size: 11px; color: #888; min-width: 32px; text-align: right">128</span>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-label">Copies</div>
+        <input type="number" id="copiesInput" min="1" max="99" value="1" style="width: 80px; padding: 6px 10px; font-size: 12px">
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-label">Density override</div>
+        <div style="display:flex;gap:4px">
+          <button class="density-btn modal-density-btn" data-density="0" onclick="setModalDensity(0)">☀</button>
+          <button class="density-btn modal-density-btn active" data-density="1" onclick="setModalDensity(1)">◐</button>
+          <button class="density-btn modal-density-btn" data-density="2" onclick="setModalDensity(2)">●</button>
+        </div>
+      </div>
+
+      <div class="setting-row" style="margin-bottom: 0">
+        <div>
+          <div class="setting-label">Feed after print</div>
+          <div class="setting-hint">Extra paper feed in mm (0 = none)</div>
+        </div>
+        <input type="number" id="feedInput" min="0" max="50" value="10" style="width: 80px; padding: 6px 10px; font-size: 12px">
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closePreviewModal()">Cancel</button>
+      <button class="btn btn-primary" id="modalPrintBtn" onclick="doPrint()">Print</button>
+    </div>
+  </div>
+</div>
+
+<!-- Templates modal -->
+<div class="modal-backdrop" id="templatesModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Templates</div>
+      <button class="modal-close" onclick="closeTemplatesModal()">×</button>
+    </div>
+
+    <!-- Save current -->
+    <div class="settings-box">
+      <div class="settings-title">Save current as template</div>
+      <input type="text" id="templateNameInput" placeholder="Template name..." style="margin-bottom: 8px; padding: 8px 10px; font-size: 12px">
+      <div class="setting-row" style="margin-bottom: 0">
+        <div>
+          <div class="setting-label">Make default</div>
+          <div class="setting-hint">Auto-load on next visit</div>
+        </div>
+        <button class="toggle" id="toggleDefault" onclick="toggleSaveDefault()"><div class="toggle-knob"></div></button>
+      </div>
+      <button class="btn btn-primary" onclick="saveTemplate()" style="width: 100%; margin-top: 12px">💾 Save template</button>
+    </div>
+
+    <!-- List -->
+    <div class="settings-title" style="margin-bottom: 8px">Saved templates</div>
+    <div class="template-list" id="templateList">
+      <div class="template-empty">No templates yet</div>
+    </div>
+
+    <div class="setting-hint" id="storageInfo" style="text-align:center">0 KB used</div>
+  </div>
+</div>
+
+<!-- Hidden working canvas -->
+<canvas id="workCanvas" style="display:none"></canvas>
+
+<script>
+// ── Constants ──────────────────────────────────────────────────────
+const PRINTER_DPI = 203;          // Most thermal printers including this one
+const PAPER_WIDTH_MM = 56;        // Physical paper roll width
+const PRINT_WIDTH_MM = 48;        // Actual printable area (printhead is 384px @ 203dpi)
+const PRINT_WIDTH_PX = 384;       // Hard limit of the printhead
+const MAX_WIDTH_MM = PRINT_WIDTH_MM; // Backwards-compat alias
+const MAX_WIDTH_PX = PRINT_WIDTH_PX; // Backwards-compat alias
+const CHUNK_SIZE = 512;
+const CHUNK_DELAY = 10;
+const STORAGE_KEY = 'cco3128_templates_v1';
+
+const PRESETS = [
+  { w: 29, h: 12, label: '29×12mm', desc: 'Address' },
+  { w: 40, h: 12, label: '40×12mm', desc: 'Standard' },
+  { w: 50, h: 30, label: '50×30mm', desc: 'Wide' },
+  { w: 40, h: 30, label: '40×30mm', desc: 'Square' },
+  { w: 48, h: 48, label: '48mm', desc: 'Round', shape: 'round' },
+  { w: 56, h: 0,  label: 'Auto', desc: 'Receipt' },
+];
+
+// ── State ──────────────────────────────────────────────────────────
+let bleDevice = null;
+let writeChar = null;
+let connected = false;
+let printing = false;
+let currentTab = 'image';
+let modalDensityOverride = null;
+
+let settings = { density: 1, dither: false, invert: false, label: false };
+let labelSize = { w: 50, h: 30, preset: 2, shape: 'rect' }; // mm; preset index or null for custom; shape: 'rect' or 'round'
+
+// Text positioning state (for movable text)
+let textState = {
+  content: 'Hello World',
+  fontSize: 48,
+  // Offset from center, in pixels at canvas resolution. 0,0 = centered.
+  offsetX: 0,
+  offsetY: 0,
+};
+let textIsDragging = false;
+let textDragStart = { x: 0, y: 0, offsetX: 0, offsetY: 0 };
+
+// History (undo/redo)
+const HISTORY_LIMIT = 30;
+let history = [];
+let historyIndex = -1;
+let isRestoringHistory = false;
+
+// Template-save UI state
+let saveAsDefault = false;
+
+const workCanvas = document.getElementById('workCanvas');
+const previewCanvas = document.getElementById('previewCanvas');
+const modalPreviewCanvas = document.getElementById('modalPreviewCanvas');
+const workCtx = workCanvas.getContext('2d');
+const previewCtx = previewCanvas.getContext('2d');
+const modalPreviewCtx = modalPreviewCanvas.getContext('2d');
+
+// ── Web Bluetooth check ────────────────────────────────────────────
+if (!navigator.bluetooth) {
+  document.getElementById('noBluetooth').style.display = 'block';
+}
+
+// ── Utilities ──────────────────────────────────────────────────────
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const mmToPx = mm => Math.round(mm * PRINTER_DPI / 25.4);
+
+// Returns the printable canvas width in pixels for the current label.
+// For labels narrower than the printhead (e.g. 30mm round stickers):
+//   the canvas matches the label width
+// For labels wider than or equal to the printhead (e.g. 56mm receipt paper):
+//   the canvas is clamped to the printable area (PRINT_WIDTH_PX = 48mm)
+function getCanvasWidthForLabel() {
+  return Math.min(mmToPx(labelSize.w), PRINT_WIDTH_PX);
+}
+
+// For round labels: set everything outside the circle to white,
+// so it doesn't print (white = no thermal activation)
+function applyRoundMask() {
+  if (labelSize.shape !== 'round') return;
+  const w = workCanvas.width;
+  const h = workCanvas.height;
+  const cx = w / 2;
+  const cy = h / 2;
+  // Use the smaller dimension for the radius (a true circle)
+  const r = Math.min(w, h) / 2;
+
+  // Build a mask: keep pixels inside the circle, force outside to white
+  const img = workCtx.getImageData(0, 0, w, h);
+  const data = img.data;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const dx = x - cx;
+      const dy = y - cy;
+      if (dx * dx + dy * dy > r * r) {
+        const i = (y * w + x) * 4;
+        data[i] = 255;
+        data[i + 1] = 255;
+        data[i + 2] = 255;
+        data[i + 3] = 255;
+      }
+    }
+  }
+  workCtx.putImageData(img, 0, 0);
+}
+
+function addLog(msg, type = '') {
+  const box = document.getElementById('logBox');
+  const div = document.createElement('div');
+  div.className = 'log-entry' + (type ? ' ' + type : '');
+  div.textContent = new Date().toLocaleTimeString() + ' ' + msg;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+  while (box.children.length > 60) box.removeChild(box.firstChild);
+}
+
+// ── BLE Connection ─────────────────────────────────────────────────
+async function toggleConnect() {
+  if (connected) {
+    if (bleDevice && bleDevice.gatt.connected) bleDevice.gatt.disconnect();
+    connected = false;
+    writeChar = null;
+    updateUI();
+    addLog('Disconnected');
+  } else {
+    await doConnect();
+  }
+}
+
+async function doConnect() {
+  try {
+    updateStatus('connecting');
+    addLog('Scanning for printer...');
+
+    bleDevice = await navigator.bluetooth.requestDevice({
+      // Filter on name prefix because this printer doesn't advertise its
+      // service UUIDs. Filtering on service 0xff00 only works if the printer
+      // is already cached by Chrome for this origin — which fails on new sites.
+      filters: [{ namePrefix: 'C&Co' }],
+      optionalServices: [0xff00],
+    });
+
+    addLog('Found: ' + (bleDevice.name || 'unknown'));
+
+    bleDevice.addEventListener('gattserverdisconnected', () => {
+      connected = false;
+      writeChar = null;
+      updateUI();
+      addLog('Disconnected (device)', 'error');
+    });
+
+    const server = await bleDevice.gatt.connect();
+    const service = await server.getPrimaryService(0xff00);
+    writeChar = await service.getCharacteristic(0xff02);
+
+    try {
+      const notifyChar = await service.getCharacteristic(0xff01);
+      await notifyChar.startNotifications();
+      notifyChar.addEventListener('characteristicvaluechanged', (e) => {
+        const val = new Uint8Array(e.target.value.buffer);
+        const hex = Array.from(val).map(b => b.toString(16).padStart(2, '0')).join(' ');
+        let ascii = '';
+        try { ascii = new TextDecoder().decode(val); } catch {}
+        addLog('← ' + hex + (ascii && /^[\x20-\x7e]+$/.test(ascii) ? ' (' + ascii + ')' : ''), 'send');
+
+        if (val.length >= 2 && val[1] >= 0 && val[1] <= 100) {
+          const bat = document.getElementById('battery');
+          bat.textContent = '🔋 ' + val[1] + '%';
+          bat.style.display = 'block';
+          bat.style.color = val[1] > 20 ? '#4a9' : '#e55';
+        }
+      });
+    } catch (e) {
+      addLog('Notifications: ' + e.message);
+    }
+
+    connected = true;
+    updateUI();
+    addLog('Connected!');
+
+    await sleep(300);
+    await writeChar.writeValueWithoutResponse(new Uint8Array([0x10, 0xff, 0x50, 0xf1]));
+  } catch (e) {
+    connected = false;
+    updateUI();
+    addLog('Connection failed: ' + e.message, 'error');
+  }
+}
+
+async function sendChunked(data) {
+  let sent = 0;
+  while (sent < data.length) {
+    const chunk = data.slice(sent, sent + CHUNK_SIZE);
+    await writeChar.writeValueWithoutResponse(chunk);
+    sent += chunk.length;
+    await sleep(CHUNK_DELAY);
+  }
+  addLog('→ Sent ' + data.length.toLocaleString() + ' bytes', 'send');
+}
+
+// ── UI Updates ─────────────────────────────────────────────────────
+function updateStatus(s) {
+  const dot = document.getElementById('statusDot');
+  dot.className = 'dot' + (s === 'connected' ? ' connected' : s === 'connecting' ? ' connecting' : '');
+}
+
+function updateUI() {
+  updateStatus(connected ? 'connected' : 'disconnected');
+  const btn = document.getElementById('connectBtn');
+  btn.textContent = connected ? 'Disconnect' : 'Connect';
+  btn.className = 'btn ' + (connected ? 'btn-secondary' : 'btn-primary');
+  if (!connected) document.getElementById('battery').style.display = 'none';
+  updatePrintBtn();
+  updateModalPrintBtn();
+}
+
+function updatePrintBtn() {
+  const btn = document.getElementById('printBtn');
+  const hasContent = workCanvas.width > 0;
+  // Always allow opening preview if we have content; the modal itself
+  // handles the connected/disconnected state for actually printing.
+  const ready = hasContent && !printing;
+  btn.className = 'print-btn' + (ready ? ' ready' : '');
+  if (printing) {
+    btn.textContent = 'Printing...';
+  } else if (!hasContent) {
+    btn.textContent = 'Add content first';
+  } else if (!connected) {
+    btn.textContent = 'Preview (not connected)';
+  } else {
+    btn.textContent = 'Preview & print';
+  }
+}
+
+// ── Tabs ───────────────────────────────────────────────────────────
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-' + tab));
+
+  // Enable drag cursor only on text tab
+  previewCanvas.classList.toggle('text-mode', tab === 'text');
+
+  // Show drag hint above preview only on text tab
+  document.getElementById('previewHint').style.display = tab === 'text' ? 'inline' : 'none';
+
+  if (tab === 'text') renderText();
+  if (tab === 'test') renderTest();
+}
+
+// ── Settings ───────────────────────────────────────────────────────
+function setDensity(d) {
+  settings.density = d;
+  document.querySelectorAll('.density-btn:not(.modal-density-btn)').forEach(b => b.classList.toggle('active', parseInt(b.dataset.density) === d));
+}
+
+function toggleOption(opt) {
+  settings[opt] = !settings[opt];
+  const el = document.getElementById('toggle' + opt.charAt(0).toUpperCase() + opt.slice(1));
+  el.classList.toggle('on', settings[opt]);
+  updatePreview();
+}
+
+// ── Label sizes ────────────────────────────────────────────────────
+function buildPresetGrid() {
+  const grid = document.getElementById('presetGrid');
+  grid.innerHTML = '';
+  PRESETS.forEach((p, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'preset-btn' + (labelSize.preset === i ? ' active' : '');
+    const heightStr = p.h === 0 ? 'auto' : p.h + 'mm';
+    btn.innerHTML = `
+      <div class="preset-mm">${p.label}</div>
+      <div class="preset-px">${p.desc}</div>
+    `;
+    btn.onclick = () => selectPreset(i);
+    grid.appendChild(btn);
+  });
+}
+
+function selectPreset(i) {
+  const p = PRESETS[i];
+  labelSize = { w: p.w, h: p.h, preset: i, shape: p.shape || 'rect' };
+  document.getElementById('customW').value = p.w;
+  document.getElementById('customH').value = p.h;
+  buildPresetGrid();
+  updateSizeHint();
+  updatePreviewFrame();
+  // Re-render current content
+  rerenderCurrentTab();
+}
+
+function setCustomSize() {
+  const w = parseInt(document.getElementById('customW').value) || 50;
+  const h = parseInt(document.getElementById('customH').value) || 30;
+  // Custom always rectangular; clear shape
+  labelSize = { w, h, preset: null, shape: 'rect' };
+  // Deactivate all preset buttons
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  updateSizeHint();
+  updatePreviewFrame();
+  rerenderCurrentTab();
+}
+
+function updateSizeHint() {
+  const wPx = getCanvasWidthForLabel();
+  const hPx = labelSize.h === 0 ? 'auto' : mmToPx(labelSize.h);
+  let hintText = `${wPx} × ${hPx} px @ ${PRINTER_DPI} DPI`;
+  if (labelSize.w > PRINT_WIDTH_MM) {
+    hintText += ` · printable area limited to ${PRINT_WIDTH_MM}mm`;
+  }
+  document.getElementById('sizeHint').textContent = hintText;
+}
+
+function rerenderCurrentTab() {
+  if (currentTab === 'text') renderText();
+  else if (currentTab === 'test') renderTest();
+  // Image tab: nothing to do — user reloads if they want different size
+}
+
+// ── Image Loading ──────────────────────────────────────────────────
+function handleFile(file) {
+  if (!file || !file.type.startsWith('image/')) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      const targetW = getCanvasWidthForLabel();
+      const ratio = targetW / img.width;
+      const newH = labelSize.h === 0 ? Math.round(img.height * ratio) : mmToPx(labelSize.h);
+      workCanvas.width = targetW;
+      workCanvas.height = newH;
+      workCtx.fillStyle = 'white';
+      workCtx.fillRect(0, 0, targetW, newH);
+      // Fit image into label
+      const fitH = labelSize.h === 0 ? Math.round(img.height * ratio) : Math.min(newH, Math.round(img.height * ratio));
+      workCtx.drawImage(img, 0, (newH - fitH) / 2, targetW, fitH);
+      applyRoundMask();
+      updatePreviewFrame();
+      updatePreview();
+      updatePrintBtn();
+      pushHistory();
+      addLog('Image loaded: ' + img.width + 'x' + img.height + ' → ' + targetW + 'x' + newH);
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// Drag and drop
+const dropZone = document.getElementById('dropZone');
+dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile(file);
+});
+
+// ── Text Rendering ─────────────────────────────────────────────────
+function renderText() {
+  const text = document.getElementById('textInput').value || ' ';
+  const fontSize = parseInt(document.getElementById('fontSizeSlider').value);
+  document.getElementById('fontSizeLabel').textContent = fontSize + 'px';
+
+  // Update state
+  textState.content = text;
+  textState.fontSize = fontSize;
+
+  drawTextCanvas();
+  updatePreview();
+  updatePrintBtn();
+  pushHistory();
+}
+
+// Draws the current textState onto workCanvas. Separated from renderText
+// so that drag operations can re-draw without re-reading inputs.
+function drawTextCanvas() {
+  const targetW = getCanvasWidthForLabel();
+  const padding = 20;
+  const lineHeight = textState.fontSize * 1.3;
+  const lines = textState.content.split('\n');
+  const computedH = Math.max(60, Math.round(lines.length * lineHeight + padding * 2));
+  const h = labelSize.h === 0 ? computedH : mmToPx(labelSize.h);
+
+  workCanvas.width = targetW;
+  workCanvas.height = h;
+  workCtx.fillStyle = 'white';
+  workCtx.fillRect(0, 0, targetW, h);
+  workCtx.fillStyle = 'black';
+  workCtx.font = 'bold ' + textState.fontSize + 'px sans-serif';
+  workCtx.textAlign = 'center';
+  workCtx.textBaseline = 'middle';
+
+  // Center + offset
+  const totalTextH = lines.length * lineHeight;
+  const cx = targetW / 2 + textState.offsetX;
+  const cyStart = h / 2 - totalTextH / 2 + lineHeight / 2 + textState.offsetY;
+
+  // Clamp so text never floats fully outside the label
+  const clampedX = Math.max(20, Math.min(targetW - 20, cx));
+  lines.forEach((line, i) => {
+    workCtx.fillText(line, clampedX, cyStart + i * lineHeight);
+  });
+
+  applyRoundMask();
+}
+
+function centerText() {
+  textState.offsetX = 0;
+  textState.offsetY = 0;
+  drawTextCanvas();
+  updatePreview();
+  pushHistory();
+  addLog('Text centered');
+}
+
+// Returns approximate text bounds in canvas-pixels for hit-testing
+function getTextBoundsOnCanvas() {
+  const targetW = workCanvas.width;
+  const targetH = workCanvas.height;
+  const lineHeight = textState.fontSize * 1.3;
+  const lines = textState.content.split('\n');
+  const totalH = lines.length * lineHeight;
+
+  workCtx.font = 'bold ' + textState.fontSize + 'px sans-serif';
+  let maxW = 0;
+  for (const line of lines) {
+    const m = workCtx.measureText(line);
+    if (m.width > maxW) maxW = m.width;
+  }
+
+  const cx = targetW / 2 + textState.offsetX;
+  const cy = targetH / 2 + textState.offsetY;
+  return {
+    left: cx - maxW / 2,
+    right: cx + maxW / 2,
+    top: cy - totalH / 2,
+    bottom: cy + totalH / 2,
+  };
+}
+
+// ── Test Pattern ───────────────────────────────────────────────────
+function renderTest() {
+  const targetW = getCanvasWidthForLabel();
+  const h = labelSize.h === 0 ? 200 : mmToPx(labelSize.h);
+
+  workCanvas.width = targetW;
+  workCanvas.height = h;
+  workCtx.fillStyle = 'white';
+  workCtx.fillRect(0, 0, targetW, h);
+
+  workCtx.strokeStyle = 'black';
+  workCtx.lineWidth = 2;
+  workCtx.strokeRect(1, 1, targetW - 2, h - 2);
+
+  workCtx.fillStyle = 'black';
+  workCtx.font = 'bold ' + Math.min(36, h / 6) + 'px sans-serif';
+  workCtx.textAlign = 'center';
+  workCtx.textBaseline = 'middle';
+  workCtx.fillText('TEST', targetW / 2, h * 0.25);
+  workCtx.font = Math.min(16, h / 12) + 'px sans-serif';
+  workCtx.fillText(targetW + '×' + h + 'px', targetW / 2, h * 0.45);
+
+  // Gradient
+  const gradTop = Math.round(h * 0.6);
+  const gradH = Math.round(h * 0.15);
+  for (let x = 20; x < targetW - 20; x++) {
+    const g = Math.round(((x - 20) / (targetW - 40)) * 255);
+    workCtx.fillStyle = 'rgb(' + g + ',' + g + ',' + g + ')';
+    workCtx.fillRect(x, gradTop, 1, gradH);
+  }
+
+  workCtx.fillStyle = 'black';
+  workCtx.font = Math.min(14, h / 14) + 'px sans-serif';
+  workCtx.fillText('gradient bar', targetW / 2, gradTop + gradH + 12);
+
+  applyRoundMask();
+  updatePreview();
+  updatePrintBtn();
+  pushHistory();
+}
+
+// ── Preview ────────────────────────────────────────────────────────
+// Process to grayscale + optional dither, then map to b/w with given threshold
+function processToBW(threshold = 128) {
+  const w = workCanvas.width;
+  const h = workCanvas.height;
+  if (w === 0 || h === 0) return null;
+
+  const srcData = workCtx.getImageData(0, 0, w, h).data;
+  const grey = new Float32Array(w * h);
+  for (let i = 0; i < w * h; i++) {
+    grey[i] = srcData[i * 4] * 0.299 + srcData[i * 4 + 1] * 0.587 + srcData[i * 4 + 2] * 0.114;
+  }
+
+  if (settings.dither) {
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const idx = y * w + x;
+        const old = grey[idx];
+        const nw = old >= threshold ? 255 : 0;
+        grey[idx] = nw;
+        const err = old - nw;
+        if (x + 1 < w) grey[idx + 1] += err * 7 / 16;
+        if (y + 1 < h) {
+          if (x > 0) grey[(y + 1) * w + (x - 1)] += err * 3 / 16;
+          grey[(y + 1) * w + x] += err * 5 / 16;
+          if (x + 1 < w) grey[(y + 1) * w + (x + 1)] += err * 1 / 16;
+        }
+      }
+    }
+  }
+
+  return { w, h, grey };
+}
+
+function updatePreview() {
+  updatePreviewFrame();
+  const proc = processToBW(128);
+  if (!proc) return;
+  const { w, h, grey } = proc;
+
+  previewCanvas.width = w;
+  previewCanvas.height = h;
+  const out = previewCtx.createImageData(w, h);
+  for (let i = 0; i < w * h; i++) {
+    const val = Math.max(0, Math.min(255, grey[i]));
+    const dark = settings.invert ? val >= 128 : val < 128;
+    const c = dark ? 0 : 255;
+    out.data[i * 4] = c;
+    out.data[i * 4 + 1] = c;
+    out.data[i * 4 + 2] = c;
+    out.data[i * 4 + 3] = 255;
+  }
+  previewCtx.putImageData(out, 0, 0);
+}
+
+// Resize the white preview frame to match label proportions
+function updatePreviewFrame() {
+  const frame = document.getElementById('previewFrame');
+  const sizeLabel = document.getElementById('previewSizeLabel');
+  if (!frame) return;
+
+  const PREVIEW_BOX_HEIGHT = 234; // 250 - padding
+  const PREVIEW_BOX_MAX_WIDTH = 360;
+
+  // Use actual canvas dimensions for proportions (not just label size mm),
+  // so that auto-height labels also render correctly
+  const canvasW = workCanvas.width || mmToPx(labelSize.w);
+  const canvasH = workCanvas.height || mmToPx(labelSize.h || 30);
+
+  const aspect = canvasW / canvasH;
+
+  let w, h;
+  if (aspect > 1) {
+    // Wider than tall: constrain by width
+    w = Math.min(PREVIEW_BOX_MAX_WIDTH, PREVIEW_BOX_HEIGHT * aspect);
+    h = w / aspect;
+    if (h > PREVIEW_BOX_HEIGHT) {
+      h = PREVIEW_BOX_HEIGHT;
+      w = h * aspect;
+    }
+  } else {
+    // Taller than wide: constrain by height
+    h = PREVIEW_BOX_HEIGHT;
+    w = h * aspect;
+    if (w > PREVIEW_BOX_MAX_WIDTH) {
+      w = PREVIEW_BOX_MAX_WIDTH;
+      h = w / aspect;
+    }
+  }
+
+  frame.style.width = Math.round(w) + 'px';
+  frame.style.height = Math.round(h) + 'px';
+
+  // Round vs rectangular label
+  if (labelSize.shape === 'round') {
+    frame.style.borderRadius = '50%';
+  } else {
+    frame.style.borderRadius = '';
+  }
+
+  // For labels wider than printhead, show shaded margins on either side
+  // to indicate the actual printable zone
+  if (labelSize.w > PRINT_WIDTH_MM) {
+    const marginPct = ((labelSize.w - PRINT_WIDTH_MM) / 2 / labelSize.w) * 100;
+    const printPct = (PRINT_WIDTH_MM / labelSize.w) * 100;
+    frame.classList.add('has-margin');
+    frame.style.setProperty('--margin-pct', marginPct + '%');
+    frame.style.setProperty('--print-pct', printPct + '%');
+  } else {
+    frame.classList.remove('has-margin');
+  }
+
+  // Update the corner label
+  let sizeText;
+  if (labelSize.shape === 'round') {
+    sizeText = `${labelSize.w}mm round`;
+  } else {
+    const heightStr = labelSize.h === 0 ? 'auto' : labelSize.h + 'mm';
+    sizeText = `${labelSize.w}×${heightStr}`;
+  }
+  sizeLabel.textContent = sizeText;
+}
+
+function updateModalPreview() {
+  const threshold = parseInt(document.getElementById('thresholdSlider').value);
+  const proc = processToBW(threshold);
+  if (!proc) return;
+  const { w, h, grey } = proc;
+
+  modalPreviewCanvas.width = w;
+  modalPreviewCanvas.height = h;
+  const out = modalPreviewCtx.createImageData(w, h);
+  for (let i = 0; i < w * h; i++) {
+    const val = Math.max(0, Math.min(255, grey[i]));
+    const dark = settings.invert ? val >= threshold : val < threshold;
+    const c = dark ? 0 : 255;
+    out.data[i * 4] = c;
+    out.data[i * 4 + 1] = c;
+    out.data[i * 4 + 2] = c;
+    out.data[i * 4 + 3] = 255;
+  }
+  modalPreviewCtx.putImageData(out, 0, 0);
+}
+
+function updateThreshold() {
+  const v = document.getElementById('thresholdSlider').value;
+  document.getElementById('thresholdLabel').textContent = v;
+  updateModalPreview();
+}
+
+// ── Bitmap Conversion ──────────────────────────────────────────────
+function canvasToBitmap(threshold = 128) {
+  const w = workCanvas.width;
+  const h = workCanvas.height;
+  const widthBytes = Math.ceil(w / 8);
+  const proc = processToBW(threshold);
+  if (!proc) return null;
+  const { grey } = proc;
+
+  const bitmap = new Uint8Array(widthBytes * h);
+  for (let y = 0; y < h; y++) {
+    for (let xb = 0; xb < widthBytes; xb++) {
+      let byte = 0;
+      for (let bit = 0; bit < 8; bit++) {
+        const x = xb * 8 + bit;
+        if (x < w) {
+          const val = Math.max(0, Math.min(255, grey[y * w + x]));
+          const dark = settings.invert ? val >= threshold : val < threshold;
+          if (dark) byte |= (128 >> bit);
+        }
+      }
+      bitmap[y * widthBytes + xb] = byte;
+    }
+  }
+
+  const header = new Uint8Array([
+    0x1d, 0x76, 0x30, 0x00,
+    widthBytes & 0xff, (widthBytes >> 8) & 0xff,
+    h & 0xff, (h >> 8) & 0xff,
+  ]);
+  const result = new Uint8Array(header.length + bitmap.length);
+  result.set(header);
+  result.set(bitmap, header.length);
+  return result;
+}
+
+// ── Modal: print preview ───────────────────────────────────────────
+function openPreviewModal() {
+  if (workCanvas.width === 0) return;
+  document.getElementById('previewModal').classList.add('open');
+  modalDensityOverride = settings.density;
+  setModalDensity(settings.density);
+  updateModalPreview();
+  // Update print button label inside modal based on connection state
+  updateModalPrintBtn();
+}
+
+function updateModalPrintBtn() {
+  const btn = document.getElementById('modalPrintBtn');
+  if (!btn) return;
+  if (!connected) {
+    btn.textContent = 'Connect printer to print';
+    btn.disabled = true;
+    btn.style.opacity = '0.5';
+    btn.style.cursor = 'not-allowed';
+  } else {
+    btn.textContent = 'Print';
+    btn.disabled = false;
+    btn.style.opacity = '';
+    btn.style.cursor = '';
+  }
+}
+
+function closePreviewModal() {
+  document.getElementById('previewModal').classList.remove('open');
+}
+
+function setModalDensity(d) {
+  modalDensityOverride = d;
+  document.querySelectorAll('.modal-density-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.density) === d));
+}
+
+// ── Print ──────────────────────────────────────────────────────────
+async function doPrint() {
+  if (!connected || !writeChar || printing) return;
+
+  const threshold = parseInt(document.getElementById('thresholdSlider').value);
+  const copies = Math.max(1, parseInt(document.getElementById('copiesInput').value) || 1);
+  const density = modalDensityOverride !== null ? modalDensityOverride : settings.density;
+  const feedMm = Math.max(0, parseInt(document.getElementById('feedInput').value) || 0);
+  const feedDots = Math.min(255, mmToPx(feedMm));
+
+  closePreviewModal();
+  printing = true;
+  updatePrintBtn();
+
+  // Defensive write: bail out gracefully if printer disconnected mid-print
+  const safeWrite = async (bytes, waitMs = 300) => {
+    if (!writeChar) throw new Error('Printer disconnected');
+    await writeChar.writeValueWithoutResponse(new Uint8Array(bytes));
+    await sleep(waitMs);
+  };
+
+  try {
+    const gsCmd = canvasToBitmap(threshold);
+    if (!gsCmd) throw new Error('No image');
+
+    for (let copy = 0; copy < copies; copy++) {
+      if (copies > 1) addLog(`Copy ${copy + 1}/${copies}...`);
+
+      // Old working flow (per-copy)
+      addLog('Enabling printer...');
+      await safeWrite([0x10, 0xff, 0xf1, 0x03], 300);
+
+      addLog('Waking up...');
+      await safeWrite(new Uint8Array(12), 300);
+
+      // Density (set every print, just like old version)
+      await safeWrite([0x10, 0xff, 0x10, 0x00, density], 200);
+
+      // Label mode start adjust (always, like old version)
+      if (settings.label) {
+        await safeWrite([0x1f, 0x11, 0x51], 200);
+      }
+
+      addLog('Sending bitmap (' + gsCmd.length.toLocaleString() + ' bytes)...');
+      if (!writeChar) throw new Error('Printer disconnected');
+      await sendChunked(gsCmd);
+      // Long wait after bitmap. Gives printer time to process before
+      // gap-detection commands. Critical for label mode reliability.
+      await sleep(2000);
+
+      if (settings.label) {
+        addLog('Positioning label...');
+        await safeWrite([0x1d, 0x0c], 300);
+        await safeWrite([0x1f, 0x11, 0x50], 200);
+      } else if (feedDots > 0) {
+        addLog('Feeding paper...');
+        await safeWrite([0x1b, 0x4a, feedDots], 300);
+      }
+
+      addLog('Stopping job...');
+      await safeWrite([0x10, 0xff, 0xf1, 0x45], 3000);
+    }
+
+    addLog('Print complete!');
+  } catch (e) {
+    addLog('Print error: ' + e.message, 'error');
+  }
+
+  printing = false;
+  updatePrintBtn();
+}
+
+// ── History (undo/redo) ────────────────────────────────────────────
+function pushHistory() {
+  if (isRestoringHistory) return;
+  if (workCanvas.width === 0 || workCanvas.height === 0) return;
+
+  const snapshot = {
+    dataUrl: workCanvas.toDataURL(),
+    settings: { ...settings },
+    labelSize: { ...labelSize },
+    textState: { ...textState },
+    tab: currentTab,
+  };
+
+  // Truncate any "redo" branch
+  history = history.slice(0, historyIndex + 1);
+  history.push(snapshot);
+  if (history.length > HISTORY_LIMIT) history.shift();
+  historyIndex = history.length - 1;
+
+  updateUndoRedoBtns();
+}
+
+function updateUndoRedoBtns() {
+  document.getElementById('undoBtn').disabled = historyIndex <= 0;
+  document.getElementById('redoBtn').disabled = historyIndex >= history.length - 1;
+}
+
+function restoreSnapshot(snap) {
+  return new Promise((resolve) => {
+    isRestoringHistory = true;
+    const img = new Image();
+    img.onload = () => {
+      workCanvas.width = img.width;
+      workCanvas.height = img.height;
+      workCtx.drawImage(img, 0, 0);
+      // Restore settings
+      settings = { ...snap.settings };
+      labelSize = { ...snap.labelSize };
+      if (snap.textState) textState = { ...snap.textState };
+      // Sync UI
+      setDensity(settings.density);
+      ['dither', 'invert', 'label'].forEach(opt => {
+        document.getElementById('toggle' + opt.charAt(0).toUpperCase() + opt.slice(1))
+          .classList.toggle('on', settings[opt]);
+      });
+      document.getElementById('customW').value = labelSize.w;
+      document.getElementById('customH').value = labelSize.h;
+      buildPresetGrid();
+      updateSizeHint();
+      updatePreview();
+      updatePrintBtn();
+      isRestoringHistory = false;
+      resolve();
+    };
+    img.src = snap.dataUrl;
+  });
+}
+
+async function undo() {
+  if (historyIndex <= 0) return;
+  historyIndex--;
+  await restoreSnapshot(history[historyIndex]);
+  updateUndoRedoBtns();
+  addLog('Undo');
+}
+
+async function redo() {
+  if (historyIndex >= history.length - 1) return;
+  historyIndex++;
+  await restoreSnapshot(history[historyIndex]);
+  updateUndoRedoBtns();
+  addLog('Redo');
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+  // Don't trigger when typing in textarea/input
+  if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+  else if ((e.ctrlKey || e.metaKey) && (e.key === 'Z' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); redo(); }
+});
+
+// ── Templates (localStorage) ───────────────────────────────────────
+function loadTemplates() {
+  try {
+    const data = localStorage.getItem(STORAGE_KEY);
+    return data ? JSON.parse(data) : { templates: [], defaultId: null };
+  } catch {
+    return { templates: [], defaultId: null };
+  }
+}
+
+function saveTemplatesData(data) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function calculateStorageSize() {
+  const data = localStorage.getItem(STORAGE_KEY) || '';
+  return Math.round(data.length / 1024);
+}
+
+function openTemplatesModal() {
+  document.getElementById('templatesModal').classList.add('open');
+  document.getElementById('templateNameInput').value = '';
+  saveAsDefault = false;
+  document.getElementById('toggleDefault').classList.remove('on');
+  renderTemplateList();
+}
+
+function closeTemplatesModal() {
+  document.getElementById('templatesModal').classList.remove('open');
+}
+
+function toggleSaveDefault() {
+  saveAsDefault = !saveAsDefault;
+  document.getElementById('toggleDefault').classList.toggle('on', saveAsDefault);
+}
+
+function saveTemplate() {
+  if (workCanvas.width === 0) {
+    addLog('Nothing to save', 'error');
+    return;
+  }
+
+  const name = document.getElementById('templateNameInput').value.trim() || ('Template ' + new Date().toLocaleString());
+  const data = loadTemplates();
+
+  // Compress thumbnail (max 200px wide)
+  const thumbCanvas = document.createElement('canvas');
+  const ratio = Math.min(1, 200 / workCanvas.width);
+  thumbCanvas.width = Math.round(workCanvas.width * ratio);
+  thumbCanvas.height = Math.round(workCanvas.height * ratio);
+  thumbCanvas.getContext('2d').drawImage(workCanvas, 0, 0, thumbCanvas.width, thumbCanvas.height);
+
+  const tpl = {
+    id: 't_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+    name,
+    createdAt: Date.now(),
+    dataUrl: workCanvas.toDataURL('image/png'),
+    thumbUrl: thumbCanvas.toDataURL('image/png'),
+    settings: { ...settings },
+    labelSize: { ...labelSize },
+    textState: { ...textState },
+    canvasW: workCanvas.width,
+    canvasH: workCanvas.height,
+  };
+
+  data.templates.unshift(tpl);
+  if (saveAsDefault) data.defaultId = tpl.id;
+
+  try {
+    saveTemplatesData(data);
+    addLog('Saved template: ' + name);
+    renderTemplateList();
+    document.getElementById('templateNameInput').value = '';
+    saveAsDefault = false;
+    document.getElementById('toggleDefault').classList.remove('on');
+  } catch (e) {
+    addLog('Save failed (storage full?): ' + e.message, 'error');
+  }
+}
+
+function loadTemplate(id) {
+  const data = loadTemplates();
+  const tpl = data.templates.find(t => t.id === id);
+  if (!tpl) return;
+
+  const img = new Image();
+  img.onload = () => {
+    workCanvas.width = tpl.canvasW || img.width;
+    workCanvas.height = tpl.canvasH || img.height;
+    workCtx.drawImage(img, 0, 0);
+
+    settings = { ...tpl.settings };
+    labelSize = { ...tpl.labelSize };
+    if (tpl.textState) textState = { ...tpl.textState };
+
+    // Sync UI
+    setDensity(settings.density);
+    ['dither', 'invert', 'label'].forEach(opt => {
+      document.getElementById('toggle' + opt.charAt(0).toUpperCase() + opt.slice(1))
+        .classList.toggle('on', settings[opt]);
+    });
+    document.getElementById('customW').value = labelSize.w;
+    document.getElementById('customH').value = labelSize.h;
+    buildPresetGrid();
+    updateSizeHint();
+
+    updatePreview();
+    updatePrintBtn();
+    pushHistory();
+    closeTemplatesModal();
+    addLog('Loaded: ' + tpl.name);
+  };
+  img.src = tpl.dataUrl;
+}
+
+function deleteTemplate(id) {
+  const data = loadTemplates();
+  const tpl = data.templates.find(t => t.id === id);
+  if (!tpl) return;
+  if (!confirm('Delete "' + tpl.name + '"?')) return;
+  data.templates = data.templates.filter(t => t.id !== id);
+  if (data.defaultId === id) data.defaultId = null;
+  saveTemplatesData(data);
+  renderTemplateList();
+  addLog('Deleted template');
+}
+
+function setDefault(id) {
+  const data = loadTemplates();
+  data.defaultId = data.defaultId === id ? null : id;
+  saveTemplatesData(data);
+  renderTemplateList();
+}
+
+function renderTemplateList() {
+  const data = loadTemplates();
+  const list = document.getElementById('templateList');
+  document.getElementById('storageInfo').textContent = calculateStorageSize() + ' KB used';
+
+  if (data.templates.length === 0) {
+    list.innerHTML = '<div class="template-empty">No templates yet</div>';
+    return;
+  }
+
+  list.innerHTML = '';
+  data.templates.forEach(tpl => {
+    const item = document.createElement('div');
+    item.className = 'template-item';
+    const isDefault = data.defaultId === tpl.id;
+    const date = new Date(tpl.createdAt).toLocaleDateString();
+    const sizeStr = tpl.labelSize ? `${tpl.labelSize.w}×${tpl.labelSize.h === 0 ? 'auto' : tpl.labelSize.h}mm` : '';
+    item.innerHTML = `
+      <div class="template-thumb"><img src="${tpl.thumbUrl}" style="max-width:100%;max-height:100%"></div>
+      <div class="template-info">
+        <div class="template-name">${escapeHtml(tpl.name)}${isDefault ? '<span class="template-default-badge">DEFAULT</span>' : ''}</div>
+        <div class="template-meta">${sizeStr} · ${date}</div>
+      </div>
+      <div class="template-actions">
+        <button class="btn-icon" title="Load" onclick="loadTemplate('${tpl.id}')">↗</button>
+        <button class="btn-icon" title="${isDefault ? 'Unset default' : 'Set default'}" onclick="setDefault('${tpl.id}')">${isDefault ? '★' : '☆'}</button>
+        <button class="btn-icon" title="Delete" onclick="deleteTemplate('${tpl.id}')">🗑</button>
+      </div>
+    `;
+    list.appendChild(item);
+  });
+}
+
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// Auto-load default template on startup
+function loadDefaultIfAny() {
+  const data = loadTemplates();
+  if (data.defaultId) {
+    const tpl = data.templates.find(t => t.id === data.defaultId);
+    if (tpl) {
+      loadTemplate(data.defaultId);
+      return true;
+    }
+  }
+  return false;
+}
+
+// ── Text drag & nudge (text tab only) ─────────────────────────────
+
+// Convert screen coords to canvas coords accounting for CSS scaling
+function screenToCanvas(clientX, clientY) {
+  const rect = previewCanvas.getBoundingClientRect();
+  const scaleX = previewCanvas.width / rect.width;
+  const scaleY = previewCanvas.height / rect.height;
+  return {
+    x: (clientX - rect.left) * scaleX,
+    y: (clientY - rect.top) * scaleY,
+  };
+}
+
+function onTextDragStart(clientX, clientY) {
+  if (currentTab !== 'text') return;
+  const pos = screenToCanvas(clientX, clientY);
+  const bounds = getTextBoundsOnCanvas();
+  // Generous hit-area (20px padding around text bounds)
+  const PAD = 20;
+  if (pos.x < bounds.left - PAD || pos.x > bounds.right + PAD ||
+      pos.y < bounds.top - PAD  || pos.y > bounds.bottom + PAD) {
+    return;
+  }
+  textIsDragging = true;
+  textDragStart = {
+    x: pos.x, y: pos.y,
+    offsetX: textState.offsetX, offsetY: textState.offsetY,
+  };
+  previewCanvas.classList.add('text-dragging');
+}
+
+function onTextDragMove(clientX, clientY) {
+  if (!textIsDragging) return;
+  const pos = screenToCanvas(clientX, clientY);
+  textState.offsetX = textDragStart.offsetX + (pos.x - textDragStart.x);
+  textState.offsetY = textDragStart.offsetY + (pos.y - textDragStart.y);
+  drawTextCanvas();
+  updatePreview();
+}
+
+function onTextDragEnd() {
+  if (!textIsDragging) return;
+  textIsDragging = false;
+  previewCanvas.classList.remove('text-dragging');
+  pushHistory();
+}
+
+// Mouse
+previewCanvas.addEventListener('mousedown', (e) => onTextDragStart(e.clientX, e.clientY));
+window.addEventListener('mousemove', (e) => onTextDragMove(e.clientX, e.clientY));
+window.addEventListener('mouseup', onTextDragEnd);
+
+// Touch
+previewCanvas.addEventListener('touchstart', (e) => {
+  if (currentTab !== 'text') return;
+  const t = e.touches[0];
+  onTextDragStart(t.clientX, t.clientY);
+  if (textIsDragging) e.preventDefault();
+}, { passive: false });
+previewCanvas.addEventListener('touchmove', (e) => {
+  if (!textIsDragging) return;
+  const t = e.touches[0];
+  onTextDragMove(t.clientX, t.clientY);
+  e.preventDefault();
+}, { passive: false });
+previewCanvas.addEventListener('touchend', onTextDragEnd);
+
+// Arrow keys to nudge (only when not in an input)
+document.addEventListener('keydown', (e) => {
+  if (currentTab !== 'text') return;
+  if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
+  if (e.target.isContentEditable) return;
+
+  const step = e.shiftKey ? 10 : 2;
+  let moved = false;
+  if (e.key === 'ArrowLeft')  { textState.offsetX -= step; moved = true; }
+  if (e.key === 'ArrowRight') { textState.offsetX += step; moved = true; }
+  if (e.key === 'ArrowUp')    { textState.offsetY -= step; moved = true; }
+  if (e.key === 'ArrowDown')  { textState.offsetY += step; moved = true; }
+  if (moved) {
+    e.preventDefault();
+    drawTextCanvas();
+    updatePreview();
+    // Debounce history pushes for arrow keys
+    clearTimeout(window._textNudgeTimer);
+    window._textNudgeTimer = setTimeout(pushHistory, 400);
+  }
+});
+
+// ── Init ───────────────────────────────────────────────────────────
+
+// Click outside modal to close
+document.getElementById('previewModal').addEventListener('click', (e) => {
+  if (e.target.id === 'previewModal') closePreviewModal();
+});
+document.getElementById('templatesModal').addEventListener('click', (e) => {
+  if (e.target.id === 'templatesModal') closeTemplatesModal();
+});
+
+// ESC closes whichever modal is open
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (document.getElementById('previewModal').classList.contains('open')) closePreviewModal();
+    if (document.getElementById('templatesModal').classList.contains('open')) closeTemplatesModal();
+  }
+});
+
+// Editable printer name persistence
+const PRINTER_NAME_KEY = 'cco3128_printer_name';
+const printerNameEl = document.getElementById('printerName');
+const savedName = localStorage.getItem(PRINTER_NAME_KEY);
+if (savedName) printerNameEl.textContent = savedName;
+
+printerNameEl.addEventListener('blur', () => {
+  let name = printerNameEl.textContent.trim();
+  if (!name) {
+    name = 'C&Co 3128';
+    printerNameEl.textContent = name;
+  }
+  localStorage.setItem(PRINTER_NAME_KEY, name);
+});
+printerNameEl.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    printerNameEl.blur();
+  }
+});
+
+buildPresetGrid();
+updateSizeHint();
+updatePreviewFrame();
+if (!loadDefaultIfAny()) {
+  renderTest();
+}
+</script>
+</body>
+</html>
