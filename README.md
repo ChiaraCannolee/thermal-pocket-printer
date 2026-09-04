@@ -59,7 +59,7 @@ If you prefer command line or want to batch-process prints:
 
 ```bash
 # Install dependencies
-pip install bleak Pillow
+pip install "bleak>=0.19" Pillow
 
 # Print a test pattern
 python3 print.py test
@@ -84,7 +84,7 @@ python3 print.py info
 
 The **web GUI** (`index.html`) is the easiest way to get started — no installation, just open it in Chrome.
 
-The **Python CLI** (`print.py`) is for automation, batch jobs, and integrations. Requires `pip install bleak Pillow`.
+The **Python CLI** (`print.py`) is for automation, batch jobs, and integrations. Requires `pip install "bleak>=0.19" Pillow`.
 
 ## Usage (CLI)
 
@@ -148,6 +148,37 @@ This tool is confirmed to work with the Crafts & Co 3128 (DP-L1S). It will likel
 
 **Other printer classes use different enable/stop commands:**
 For the Fichero D11s and other AiYin-based label printers, see [fichero-printer](https://github.com/0xMH/fichero-printer) by 0xMH, who reverse-engineered the same SDK for a different device class.
+
+## Troubleshooting
+
+### Linux: `bleak.exc.BleakDBusError: [org.bluez.Error.NotAvailable] br-connection-profile-unavailable`
+
+This one's a BlueZ quirk, not a bug in this repo, and you'll hit it on any Linux machine with this printer (or a rebrand of it).
+
+The DP-L1S is a genuine dual-mode Bluetooth chip. It advertises two separate identities: a classic BR/EDR one (shows up in a scan without the `_BLE` suffix, describing itself as "imaging", a real classic Bluetooth service class historically used by printers and scanners) and the LE/GATT one this project actually talks to (`..._BLE`, "Miscellaneous"). `print.py` correctly scans over LE and connects to the `_BLE` address.
+
+The failure happens a layer below this code, inside BlueZ itself. Bleak's Linux backend connects by calling BlueZ's generic `Device1.Connect()` D-Bus method with no transport hint. When BlueZ sees a device advertising as dual-mode, it tries the BR/EDR side first. This printer's classic side offers the old Basic Imaging Profile, and no mainstream Linux distro ships a BlueZ plugin for that anymore, so that negotiation fails before BlueZ ever reaches the plain GATT/LE connection Bleak actually asked for. BlueZ reports that failure back as `NotAvailable: br-connection-profile-unavailable`, and Bleak passes it straight through. See [hbldh/bleak#1521](https://github.com/hbldh/bleak/issues/1521) and [bluez/bluez#318](https://github.com/bluez/bluez/issues/318) for the same root cause reported against other dual-mode devices.
+
+Two things to try, in order:
+
+1. **Clear stale device state.** Costs nothing:
+
+   ```bash
+   bluetoothctl remove <the _BLE MAC address>
+   ```
+
+   then rerun `python3 print.py info`. If BlueZ cached this device from an earlier scan or pairing attempt in dual-mode form, a clean device object sometimes avoids re-triggering the BR/EDR attempt.
+
+2. **Force the adapter into LE-only mode.** This is the actual fix, it stops BlueZ from ever attempting a BR/EDR connection on that adapter. In `/etc/bluetooth/main.conf`:
+
+   ```ini
+   [General]
+   ControllerMode = le
+   ```
+
+   then `sudo systemctl restart bluetooth`.
+
+   Caveat: this appears to be a global setting rather than per-adapter, so if that machine only has one Bluetooth radio, it disables classic Bluetooth entirely while active, including Bluetooth headphones/speakers, a classic BT mouse or keyboard, and car audio (anything LE-based, including most modern earbuds, is unaffected). If that's a dealbreaker, a cheap dedicated USB BLE dongle for just the printer sidesteps the tradeoff.
 
 ## Background
 

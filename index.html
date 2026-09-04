@@ -797,8 +797,17 @@ const PRINT_WIDTH_MM = 48;        // Actual printable area (printhead is 384px @
 const PRINT_WIDTH_PX = 384;       // Hard limit of the printhead
 const MAX_WIDTH_MM = PRINT_WIDTH_MM; // Backwards-compat alias
 const MAX_WIDTH_PX = PRINT_WIDTH_PX; // Backwards-compat alias
-const CHUNK_SIZE = 512;
-const CHUNK_DELAY = 10;
+// Web Bluetooth gives no way to read the negotiated ATT MTU (unlike the
+// Python CLI, which can query it and adapt), so this has to be a fixed,
+// conservative guess rather than something we can detect and cap to at
+// runtime. 512B/10ms here would mirror the CLI's upper bound, but the CLI
+// only actually uses that much once it's confirmed the connection can take
+// it; sending it blind from the browser risks the same
+// "GATT write failed" crash the CLI used to hit. 100B/50ms matches what
+// the basic single-printer version of this project already ships and has
+// been confirmed to work.
+const CHUNK_SIZE = 100;
+const CHUNK_DELAY = 50;
 const STORAGE_KEY = 'cco3128_templates_v1';
 
 const PRESETS = [
@@ -924,13 +933,26 @@ async function doConnect() {
     updateStatus('connecting');
     addLog('Scanning for printer...');
 
-    bleDevice = await navigator.bluetooth.requestDevice({
+    try {
       // Filter on name prefix because this printer doesn't advertise its
       // service UUIDs. Filtering on service 0xff00 only works if the printer
       // is already cached by Chrome for this origin — which fails on new sites.
-      filters: [{ namePrefix: 'C&Co' }],
-      optionalServices: [0xff00],
-    });
+      bleDevice = await navigator.bluetooth.requestDevice({
+        filters: [{ namePrefix: 'C&Co' }],
+        optionalServices: [0xff00],
+      });
+    } catch (e) {
+      // No device matched that name. Rebrands of this printer (Action,
+      // Lidl/Silvercrest, and others) often broadcast under a different
+      // name, so fall back to showing every nearby Bluetooth device and
+      // let the user pick manually instead of giving up here.
+      if (e.name !== 'NotFoundError') throw e;
+      addLog("No printer matching the known name found, showing all nearby Bluetooth devices instead...");
+      bleDevice = await navigator.bluetooth.requestDevice({
+        acceptAllDevices: true,
+        optionalServices: [0xff00],
+      });
+    }
 
     addLog('Found: ' + (bleDevice.name || 'unknown'));
 

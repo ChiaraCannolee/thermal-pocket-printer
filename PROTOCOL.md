@@ -24,6 +24,7 @@ The printer advertises as **`C&Co 3128_BLE`** but does **not** include its servi
 **Implication for clients:**
 - Native BLE clients (e.g. Python `bleak`) can scan all nearby devices and identify the printer by name.
 - Web Bluetooth clients (Chrome) must use a `namePrefix` filter (e.g. `'C&Co'`) and declare `ff00` as an `optionalServices` entry, because filtering on `services: [0xff00]` would only match cached devices and fails on first-time pairing or new origins.
+- Rebrands of this printer (Action, Lidl/Silvercrest, and others) often advertise under a different name that won't match a `'C&Co'` prefix filter. `requestDevice()` throws `NotFoundError` when no device matches, so `index.html` catches that specific error and retries with `acceptAllDevices: true`, letting the user pick the right device manually from every nearby Bluetooth device instead of failing outright.
 
 ## BLE Services
 
